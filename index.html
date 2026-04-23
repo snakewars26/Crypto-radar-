@@ -135,6 +135,36 @@
     .wa-sell { color:var(--sell); background:rgba(255,51,85,.1); }
     .whale-empty { color:var(--dim); font-size:.75rem; font-family:var(--mono); padding:18px 0; text-align:center; }
 
+    /* ALERTES SUSPECTS */
+    .alert-section { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:44px; }
+    .alert-intro { font-size:.79rem; color:var(--dim); margin-bottom:16px; line-height:1.6; padding:11px 14px; background:rgba(255,51,85,.04); border:1px solid rgba(255,51,85,.12); border-radius:8px; }
+    .alert-list { display:flex; flex-direction:column; gap:10px; }
+    .alert-item { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:10px; border-left:4px solid; animation:fadeUp .3s ease both; }
+    .alert-SPIKE    { background:rgba(255,187,0,.06);  border-color:#ffbb00; }
+    .alert-COORD    { background:rgba(255,51,85,.07);  border-color:#ff3355; }
+    .alert-VOLUME   { background:rgba(100,180,255,.06); border-color:#4499ff; }
+    .alert-emoji { font-size:1.5rem; flex-shrink:0; margin-top:2px; }
+    .alert-body { flex:1; }
+    .alert-title { font-weight:700; font-size:.82rem; color:var(--white); margin-bottom:5px; }
+    .alert-title .coin-tag { font-family:var(--mono); letter-spacing:1px; }
+    .alert-explain { font-size:.76rem; color:#9bbcd8; line-height:1.65; }
+    .alert-time { font-size:.58rem; color:var(--dim); font-family:var(--mono); margin-top:6px; }
+    .alert-badge { font-size:.58rem; font-family:var(--mono); letter-spacing:1px; padding:3px 8px; border-radius:4px; white-space:nowrap; flex-shrink:0; align-self:flex-start; }
+    .badge-SPIKE  { background:rgba(255,187,0,.15);  color:#ffbb00; }
+    .badge-COORD  { background:rgba(255,51,85,.15);  color:#ff3355; }
+    .badge-VOLUME { background:rgba(100,180,255,.15); color:#4499ff; }
+    .alert-empty { color:var(--dim); font-size:.75rem; font-family:var(--mono); padding:18px 0; text-align:center; }
+    .alert-BOT   { background:rgba(0,229,255,.06); border-color:#00e5ff; }
+    .badge-BOT   { background:rgba(0,229,255,.15); color:#00e5ff; }
+
+    /* EXCHANGE BADGES dans les baleines */
+    .exch-badge { display:inline-flex; align-items:center; gap:3px; font-size:.56rem; font-family:var(--mono); padding:2px 7px; border-radius:4px; letter-spacing:.5px; font-weight:700; vertical-align:middle; }
+    .exch-BINANCE  { background:rgba(240,185,11,.15); color:#f0b90b; }
+    .exch-COINBASE { background:rgba(0,82,255,.18);   color:#4d8fff; }
+    .exch-KRAKEN   { background:rgba(87,65,217,.2);   color:#a090ff; }
+    .exch-BYBIT    { background:rgba(247,166,0,.18);  color:#f7c400; }
+    .whale-region  { font-size:.64rem; color:#445577; font-family:var(--mono); margin-top:3px; letter-spacing:.3px; }
+
     /* HISTORIQUE */
     .hist-section { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
     .htable { width:100%; border-collapse:collapse; font-size:.72rem; }
@@ -164,7 +194,7 @@
       </div>
       <div>
         <h1>CRYPTO<span>RADAR</span></h1>
-        <div class="subtitle">SIGNAUX EN TEMPS RÉEL — BINANCE LIVE</div>
+        <div class="subtitle">4 EXCHANGES EN TEMPS RÉEL — BINANCE · COINBASE · KRAKEN · BYBIT</div>
       </div>
     </div>
     <div class="header-right">
@@ -186,11 +216,28 @@
   <div class="whale-section">
     <div class="whale-intro">
       Les <strong style="color:#7dd3fc">baleines</strong> sont de très grands investisseurs capables de faire bouger le marché à eux seuls.
-      Quand une baleine achète ou vend massivement, ça peut influencer le prix dans les minutes qui suivent.
-      On surveille ici toutes les transactions supérieures à <strong style="color:#7dd3fc">100 000 $</strong>.
+      On surveille ici toutes les transactions supérieures à <strong style="color:#7dd3fc">100 000 $</strong> sur <strong style="color:#7dd3fc">4 exchanges en même temps</strong>.
+      Chaque exchange a une base d'utilisateurs différente — on peut donc deviner <em>d'où vient probablement</em> le gros investisseur :
+      <span class="exch-badge exch-BINANCE">🌏 Binance</span> = Asie / Global &nbsp;·&nbsp;
+      <span class="exch-badge exch-COINBASE">🇺🇸 Coinbase</span> = États-Unis &nbsp;·&nbsp;
+      <span class="exch-badge exch-KRAKEN">🇪🇺 Kraken</span> = Europe &nbsp;·&nbsp;
+      <span class="exch-badge exch-BYBIT">🇸🇬 Bybit</span> = Asie / Singapour.
+      Ce n'est <strong>pas une certitude</strong>, juste une indication géographique probable.
     </div>
     <div class="whale-list" id="whaleList">
       <div class="whale-empty">🔍 En attente de grosses transactions… (dès qu'une baleine bouge, elle apparaît ici)</div>
+    </div>
+  </div>
+
+  <div class="section-title">🚨 Alertes comportements suspects</div>
+  <div class="alert-section">
+    <div class="alert-intro">
+      Ces alertes s'allument quand quelque chose d'<strong style="color:#ff6680">anormal</strong> est détecté :
+      un prix qui bouge trop vite, plusieurs gros investisseurs qui agissent en même temps, ou un volume d'échanges bizarrement élevé.
+      <strong style="color:var(--hold)"> Ce n'est pas forcément une fraude</strong> — mais c'est un signal que quelque chose se passe et qu'il faut rester vigilant.
+    </div>
+    <div class="alert-list" id="alertList">
+      <div class="alert-empty">✅ Tout semble normal pour l'instant. Les alertes apparaissent ici dès qu'un comportement suspect est détecté.</div>
     </div>
   </div>
 
@@ -208,7 +255,7 @@
     </table>
   </div>
 
-  <footer>CRYPTORADAR • DONNÉES BINANCE API GRATUIT • INDICATIF SEULEMENT — PAS DE CONSEIL FINANCIER</footer>
+  <footer>CRYPTORADAR • BINANCE · COINBASE · KRAKEN · BYBIT • INDICATIF SEULEMENT — PAS DE CONSEIL FINANCIER</footer>
 </div>
 
 <script>
@@ -267,6 +314,23 @@ SYMBOLS.forEach(s => {
 
 const WHALES = [];
 const WHALE_MIN = 100000; // 100k$
+
+/* ============================================================
+   EXCHANGES — 4 sources en parallèle
+   ============================================================ */
+const EXCHANGES = {
+  BINANCE:  { name:'Binance',  flag:'🌏', region:'Asie / Global',      color:'#f0b90b', cls:'exch-BINANCE'  },
+  COINBASE: { name:'Coinbase', flag:'🇺🇸', region:'États-Unis',         color:'#4d8fff', cls:'exch-COINBASE' },
+  KRAKEN:   { name:'Kraken',   flag:'🇪🇺', region:'Europe',             color:'#a090ff', cls:'exch-KRAKEN'   },
+  BYBIT:    { name:'Bybit',    flag:'🇸🇬', region:'Asie / Singapour',   color:'#f7c400', cls:'exch-BYBIT'    },
+};
+
+// Tables de conversion : symbol exchange → notre clé USDT standard
+const SYM_FROM = {
+  COINBASE: {'BTC-USD':'BTCUSDT','ETH-USD':'ETHUSDT','SOL-USD':'SOLUSDT','XRP-USD':'XRPUSDT','ADA-USD':'ADAUSDT','DOGE-USD':'DOGEUSDT','AVAX-USD':'AVAXUSDT'},
+  KRAKEN:   {'XBT/USD':'BTCUSDT','ETH/USD':'ETHUSDT','SOL/USD':'SOLUSDT','XRP/USD':'XRPUSDT','ADA/USD':'ADAUSDT','DOGE/USD':'DOGEUSDT','AVAX/USD':'AVAXUSDT'},
+  BYBIT:    {'BTCUSDT':'BTCUSDT','ETHUSDT':'ETHUSDT','SOLUSDT':'SOLUSDT','BNBUSDT':'BNBUSDT','XRPUSDT':'XRPUSDT','ADAUSDT':'ADAUSDT','DOGEUSDT':'DOGEUSDT','AVAXUSDT':'AVAXUSDT'},
+};
 
 /* ============================================================
    SUPABASE
@@ -429,33 +493,38 @@ function drawChart(sym) {
    ============================================================ */
 let _whaleDirty = false;
 
-function checkWhale(sym, price, qty, isSell) {
+function checkWhale(sym, price, qty, isSell, exchange) {
   const usd = price * qty;
   if (usd < WHALE_MIN) return;
   const info = SYMBOLS.find(s=>s.id===sym);
   const now  = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const type = isSell ? 'sell' : 'buy';
   const coin = info?.name || sym.replace('USDT','');
+  const exch = EXCHANGES[exchange] || EXCHANGES.BINANCE;
   const desc = isSell
     ? `Un gros investisseur vient de <strong style="color:var(--sell)">vendre massivement</strong> du ${coin}. Ça peut faire baisser le prix.`
     : `Un gros investisseur vient d'<strong style="color:var(--buy)">acheter massivement</strong> du ${coin}. Signal potentiellement positif.`;
-  WHALES.unshift({coin, usd, type, desc, time:now});
+  WHALES.unshift({coin, usd, type, desc, time:now, rawTs:Date.now(), exchange, exch});
   if (WHALES.length > 8) WHALES.pop();
   _whaleDirty = true;
+  checkCoordination(coin);
 }
 
 function renderWhales() {
   const el = document.getElementById('whaleList');
   if (!WHALES.length) {
-    el.innerHTML = `<div class="whale-empty">🔍 En attente de grosses transactions…</div>`;
+    el.innerHTML = `<div class="whale-empty">🔍 En attente de grosses transactions sur les 4 exchanges…</div>`;
     return;
   }
   el.innerHTML = WHALES.map(w => {
-    const fmt = w.usd >= 1e6 ? `$${(w.usd/1e6).toFixed(2)}M` : `$${Math.round(w.usd/1000)}k`;
+    const fmt  = w.usd >= 1e6 ? `$${(w.usd/1e6).toFixed(2)}M` : `$${Math.round(w.usd/1000)}k`;
+    const exch = w.exch || EXCHANGES.BINANCE;
+    const exchBadge = `<span class="exch-badge ${exch.cls}">${exch.flag} ${exch.name}</span>`;
     return `<div class="whale-item">
       <div class="whale-emoji">🐋</div>
       <div class="whale-info">
-        <div class="whale-coin">${w.coin} <span style="font-size:.6rem;color:var(--dim);font-weight:400">${w.time}</span></div>
+        <div class="whale-coin">${w.coin} ${exchBadge} <span style="font-size:.6rem;color:var(--dim);font-weight:400">${w.time}</span></div>
+        <div class="whale-region">📍 Probablement depuis : ${exch.region}</div>
         <div class="whale-desc">${w.desc}</div>
       </div>
       <div class="whale-amount ${w.type==='buy'?'wa-buy':'wa-sell'}">${w.type==='buy'?'▲ ACHAT':'▼ VENTE'}<br>${fmt}</div>
@@ -650,7 +719,12 @@ function connectBinance() {
         d.rsi = calcRSI(d.prices);
 
         // Détection baleine (flag seulement, pas de rendu immédiat)
-        checkWhale(sym, price, qty, isMk);
+        checkWhale(sym, price, qty, isMk, 'BINANCE');
+
+        // Détection fraude/anomalies + robots
+        checkSpike(sym, price);
+        checkVolumeAnomaly(sym);
+        checkBot(sym, qty, isMk);
 
         // PAS de updateCard ici → géré par la boucle de rendu
       }
@@ -666,6 +740,109 @@ function connectBinance() {
 }
 
 /* ============================================================
+   COINBASE — 🇺🇸 États-Unis
+   ============================================================ */
+function connectCoinbase() {
+  const symbols = ['BTC-USD','ETH-USD','SOL-USD','XRP-USD','ADA-USD','DOGE-USD','AVAX-USD'];
+  let ws;
+  const connect = () => {
+    ws = new WebSocket('wss://advanced-trade-ws.coinbase.com/');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({type:'subscribe', product_ids:symbols, channel:'market_trades'}));
+    };
+    ws.onmessage = ({data}) => {
+      try {
+        const msg = JSON.parse(data);
+        if (msg.channel !== 'market_trades' || !msg.events) return;
+        msg.events.forEach(ev => {
+          if (ev.type !== 'update' || !ev.trades) return;
+          ev.trades.forEach(t => {
+            const sym = SYM_FROM.COINBASE[t.product_id];
+            if (!sym || !S[sym]) return;
+            const price = parseFloat(t.price);
+            const qty   = parseFloat(t.size);
+            const isSell= t.side === 'SELL';
+            S[sym].price = price;
+            checkWhale(sym, price, qty, isSell, 'COINBASE');
+            checkBot(sym, qty, isSell);
+          });
+        });
+      } catch(e) {}
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => setTimeout(connect, 6000);
+  };
+  connect();
+}
+
+/* ============================================================
+   KRAKEN — 🇪🇺 Europe
+   ============================================================ */
+function connectKraken() {
+  const symbols = ['XBT/USD','ETH/USD','SOL/USD','XRP/USD','ADA/USD','DOGE/USD','AVAX/USD'];
+  let ws;
+  const connect = () => {
+    ws = new WebSocket('wss://ws.kraken.com/v2');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({method:'subscribe', params:{channel:'trade', symbol:symbols}}));
+    };
+    ws.onmessage = ({data}) => {
+      try {
+        const msg = JSON.parse(data);
+        if (msg.channel !== 'trade' || !msg.data) return;
+        msg.data.forEach(t => {
+          const sym = SYM_FROM.KRAKEN[t.symbol];
+          if (!sym || !S[sym]) return;
+          const price = parseFloat(t.price);
+          const qty   = parseFloat(t.qty);
+          const isSell= t.side === 'sell';
+          S[sym].price = price;
+          checkWhale(sym, price, qty, isSell, 'KRAKEN');
+          checkBot(sym, qty, isSell);
+        });
+      } catch(e) {}
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => setTimeout(connect, 6000);
+  };
+  connect();
+}
+
+/* ============================================================
+   BYBIT — 🇸🇬 Asie / Singapour
+   ============================================================ */
+function connectBybit() {
+  const args = Object.keys(SYM_FROM.BYBIT).map(s => `publicTrade.${s}`);
+  let ws;
+  const connect = () => {
+    ws = new WebSocket('wss://stream.bybit.com/v5/public/spot');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({op:'subscribe', args}));
+    };
+    ws.onmessage = ({data}) => {
+      try {
+        const msg = JSON.parse(data);
+        if (!msg.topic || !msg.topic.startsWith('publicTrade.') || !msg.data) return;
+        msg.data.forEach(t => {
+          const rawSym = msg.topic.replace('publicTrade.','');
+          const sym = SYM_FROM.BYBIT[rawSym];
+          if (!sym || !S[sym]) return;
+          const price = parseFloat(t.p);
+          const qty   = parseFloat(t.v);
+          const isSell= t.S === 'Sell';
+          S[sym].price = price;
+          checkWhale(sym, price, qty, isSell, 'BYBIT');
+          checkBot(sym, qty, isSell);
+        });
+      } catch(e) {}
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => setTimeout(connect, 6000);
+  };
+  connect();
+}
+
+/* ============================================================
    BOUCLE DE RENDU — 500ms
    Données = temps réel | Affichage = limité → pas de freeze
    ============================================================ */
@@ -674,6 +851,7 @@ let _lastMsg = Date.now();
 function renderLoop() {
   SYMBOLS.forEach(s => updateCard(s.id));
   if (_whaleDirty) { renderWhales(); _whaleDirty = false; }
+  if (_alertDirty) { renderAlerts(); _alertDirty = false; }
 }
 
 /* ============================================================
@@ -694,11 +872,160 @@ function startWatchdog() {
    ============================================================ */
 buildCards();
 connectBinance();
+connectCoinbase();
+connectKraken();
+connectBybit();
 initAbly();
 loadHistory();
 setInterval(renderLoop, 500);
 setInterval(loadHistory, 60000);
 startWatchdog();
+
+/* ============================================================
+   DÉTECTION DE COMPORTEMENTS SUSPECTS
+   ============================================================ */
+const ALERTS = [];
+const MAX_ALERTS = 10;
+let _alertDirty = false;
+
+// --- Historique de prix avec timestamps pour détecter les spikes ---
+SYMBOLS.forEach(s => { S[s.id]._priceLog = []; }); // [{price, ts}]
+
+// --- Historique de volume pour détecter les anomalies ---
+SYMBOLS.forEach(s => { S[s.id]._volSnaps = []; S[s.id]._volWindow = 0; });
+
+function addAlert(type, coin, title, explain) {
+  const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  // Anti-doublon : pas 2 alertes identiques sur la même crypto dans les 90s
+  const recent = ALERTS.find(a => a.type===type && a.coin===coin && (Date.now()-a.rawTs) < 90000);
+  if (recent) return;
+  ALERTS.unshift({type, coin, title, explain, time:now, rawTs:Date.now()});
+  if (ALERTS.length > MAX_ALERTS) ALERTS.pop();
+  _alertDirty = true;
+}
+
+// A) SPIKE — le prix a bougé de > 3% en moins de 2 minutes
+function checkSpike(sym, price) {
+  const d = S[sym];
+  const now = Date.now();
+  d._priceLog.push({price, ts:now});
+  // Garder seulement les 2 dernières minutes
+  d._priceLog = d._priceLog.filter(p => now - p.ts < 120000);
+  if (d._priceLog.length < 5) return;
+  const oldest = d._priceLog[0].price;
+  const pct = ((price - oldest) / oldest) * 100;
+  if (Math.abs(pct) >= 3) {
+    const dir = pct > 0 ? '📈 monté' : '📉 chuté';
+    const coin = sym.replace('USDT','');
+    addAlert('SPIKE', coin,
+      `⚡ ${coin} a ${dir} de ${Math.abs(pct).toFixed(1)}% en moins de 2 minutes`,
+      `En temps normal, un prix ne bouge pas aussi vite sans raison. Ce genre de mouvement brutal peut vouloir dire que des gens achètent ou vendent massivement pour manipuler le prix, ou qu'une grosse nouvelle vient d'éclater. Dans tous les cas : soyez prudent avant d'agir.`
+    );
+  }
+}
+
+// B) COORDINATION DE BALEINES — 2+ baleines sur la même crypto en < 60s
+function checkCoordination(coin) {
+  const now = Date.now();
+  // Compter les baleines récentes sur ce coin (rawTs ajouté dans checkWhale)
+  const recent = WHALES.filter(w => w.coin === coin && w.rawTs && (now - w.rawTs) < 60000);
+  if (recent.length >= 2) {
+    const types = recent.map(w => w.type === 'buy' ? 'achats' : 'ventes');
+    const allSame = types.every(t => t === types[0]);
+    const action = allSame ? `tous des ${types[0]}` : 'achats et ventes mélangés';
+    addAlert('COORD', coin,
+      `🚨 ${recent.length} gros investisseurs ont bougé du ${coin} en moins d'une minute (${action})`,
+      `Quand plusieurs "baleines" (très gros investisseurs) font la même chose en même temps, ça peut être une manipulation organisée : ils s'entendent pour faire monter ou descendre le prix artificiellement avant de tirer profit de la situation. Restez vigilant.`
+    );
+  }
+}
+
+// C) ANOMALIE DE VOLUME — 4x plus d'échanges que la moyenne habituelle
+function checkVolumeAnomaly(sym) {
+  const d = S[sym];
+  const now = Date.now();
+  const curVol = d.buyVol + d.sellVol;
+
+  // Snapshot toutes les 20s
+  if (!d._lastSnap || now - d._lastSnap > 20000) {
+    d._volSnaps.push({vol:curVol, ts:now});
+    d._lastSnap = now;
+    if (d._volSnaps.length > 15) d._volSnaps.shift(); // garder ~5 min
+  }
+
+  if (d._volSnaps.length < 4) return;
+  const avg = d._volSnaps.slice(0,-1).reduce((s,v)=>s+v.vol,0) / (d._volSnaps.length-1);
+  if (avg <= 0) return;
+  const ratio = curVol / avg;
+  if (ratio >= 4) {
+    const coin = sym.replace('USDT','');
+    addAlert('VOLUME', coin,
+      `📊 Le volume d'échanges sur ${coin} est ${ratio.toFixed(0)}x plus élevé que d'habitude`,
+      `Il y a beaucoup plus de transactions que la normale sur cette crypto. Ça peut signaler une grosse actualité, un mouvement coordonné d'investisseurs, ou du "wash trading" (une technique où quelqu'un achète et revend à lui-même pour faire croire qu'il y a beaucoup d'activité et attirer d'autres acheteurs).`
+    );
+  }
+}
+
+// D) DÉTECTEUR DE ROBOTS (bots de trading)
+// Un robot passe des ordres automatiquement en millisecondes — des signaux trahissent sa présence.
+function checkBot(sym, qty, isSell) {
+  const d = S[sym];
+  if (!d._botBuf) d._botBuf = [];
+  const now = Date.now();
+  d._botBuf.push({ts:now, qty, isSell});
+  // Garder 30 secondes d'historique
+  d._botBuf = d._botBuf.filter(t => now - t.ts < 30000);
+  const buf = d._botBuf;
+  if (buf.length < 15) return;
+
+  // Signal A : 15 trades d'affilée tous dans le même sens en < 5 secondes
+  const last15 = buf.slice(-15);
+  const span15 = last15[14].ts - last15[0].ts;
+  const allSameDir = last15.every(t => t.isSell === last15[0].isSell);
+  if (allSameDir && span15 < 5000) {
+    const coin = sym.replace('USDT','');
+    const dir  = last15[0].isSell ? 'de vente' : "d'achat";
+    addAlert('BOT', coin,
+      `🤖 Robot actif sur ${coin} — 15 ordres ${dir} en ${(span15/1000).toFixed(1)}s`,
+      `Un programme automatique vient de passer 15 ordres d'affilée, tous dans le même sens, en quelques secondes à peine. Aucun humain ne peut faire ça aussi vite. Ces robots cherchent souvent à pousser le prix dans une direction pour en tirer profit ensuite. Ce n'est pas forcément illégal, mais c'est un signe que le marché est sous influence automatisée.`
+    );
+    return;
+  }
+
+  // Signal B : même quantité exacte répétée 10+ fois sur les 20 derniers trades
+  if (buf.length < 20) return;
+  const last20 = buf.slice(-20);
+  const rounded = last20.map(t => Math.round(t.qty * 10000) / 10000); // arrondi à 4 décimales
+  const counts = {};
+  rounded.forEach(q => counts[q] = (counts[q]||0)+1);
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  if (top && top[1] >= 10) {
+    const coin = sym.replace('USDT','');
+    addAlert('BOT', coin,
+      `🤖 Robot détecté sur ${coin} — même quantité répétée ${top[1]}x de suite`,
+      `La même quantité exacte (${top[0]} ${coin}) revient ${top[1]} fois sur les 20 dernières transactions. Les humains font varier leurs montants — les robots non. C'est une signature typique d'un algorithme automatique. Il peut s'agir d'un "market maker" (qui facilite les échanges) ou d'un bot plus agressif cherchant à manipuler le marché.`
+    );
+  }
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alertList');
+  if (!el) return;
+  if (!ALERTS.length) {
+    el.innerHTML = `<div class="alert-empty">✅ Tout semble normal pour l'instant. Les alertes apparaissent ici dès qu'un comportement suspect est détecté.</div>`;
+    return;
+  }
+  const LABELS = {SPIKE:'⚡ MOUVEMENT RAPIDE', COORD:'🚨 COORDINATION', VOLUME:'📊 VOLUME ANORMAL', BOT:'🤖 ROBOT DÉTECTÉ'};
+  el.innerHTML = ALERTS.map(a => `
+    <div class="alert-item alert-${a.type}">
+      <div class="alert-body">
+        <div class="alert-title"><span class="coin-tag">${a.coin}</span> — ${a.title}</div>
+        <div class="alert-explain">${a.explain}</div>
+        <div class="alert-time">${a.time}</div>
+      </div>
+      <div class="alert-badge badge-${a.type}">${LABELS[a.type]||a.type}</div>
+    </div>`).join('');
+}
 
 window.addEventListener('resize', () => {
   SYMBOLS.forEach(s => {
