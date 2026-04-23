@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Radar — Signaux en temps réel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --bg:      #020409;
+      --card:    #0a1525;
+      --border:  #14294d;
+      --buy:     #00e87a;
+      --sell:    #ff3355;
+      --hold:    #ffbb00;
+      --text:    #8ab8e8;
+      --dim:     #2a4570;
+      --accent:  #1166ff;
+      --white:   #f0f6ff;
+      --mono:    'Share Tech Mono', monospace;
+      --sans:    'Inter', sans-serif;
+      --display: 'Orbitron', monospace;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(0,102,255,.03) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,102,255,.03) 1px,transparent 1px);
+      background-size:44px 44px; pointer-events:none; z-index:0;
+    }
+
+    .wrap { max-width:1280px; margin:0 auto; padding:22px 14px 80px; position:relative; z-index:1; }
+
+    /* HEADER */
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+    .logo { display:flex; align-items:center; gap:14px; }
+    .radar-wrap { width:46px; height:46px; position:relative; flex-shrink:0; }
+    .radar-ring { position:absolute; inset:0; border-radius:50%; border:1px solid var(--border); }
+    .radar-sweep { position:absolute; inset:0; border-radius:50%; background:conic-gradient(from 0deg,transparent 0deg,rgba(0,102,255,.3) 60deg,transparent 61deg); animation:sweep 3s linear infinite; }
+    .radar-dot { position:absolute; top:50%; left:50%; width:6px; height:6px; border-radius:50%; background:var(--accent); transform:translate(-50%,-50%); box-shadow:0 0 10px var(--accent); }
+    @keyframes sweep { to{transform:rotate(360deg)} }
+    h1 { font-family:var(--display); font-size:1.4rem; font-weight:900; color:var(--white); letter-spacing:4px; line-height:1; }
+    h1 span { color:var(--accent); }
+    .subtitle { font-size:.55rem; color:var(--dim); letter-spacing:2px; margin-top:4px; font-family:var(--mono); }
+    .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+    .live-badge { display:flex; align-items:center; gap:6px; font-size:.65rem; color:var(--buy); letter-spacing:2px; font-family:var(--mono); }
+    .dot { width:6px; height:6px; border-radius:50%; background:var(--buy); animation:blink 1.4s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,232,122,.5)} 50%{opacity:.4;box-shadow:0 0 0 5px rgba(0,232,122,0)} }
+    #userCount { font-size:.6rem; color:var(--dim); font-family:var(--mono); }
+
+    /* DISCLAIMER */
+    .disclaimer { background:rgba(255,187,0,.05); border:1px solid rgba(255,187,0,.2); border-radius:8px; padding:12px 16px; font-size:.78rem; color:#ccaa00; margin-bottom:26px; line-height:1.6; }
+    .disclaimer strong { color:var(--hold); }
+
+    /* SECTION TITLE */
+    .section-title { font-family:var(--display); font-size:.68rem; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* GRID */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; margin-bottom:44px; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; position:relative; transition:border-color .3s,box-shadow .3s; animation:fadeUp .4s ease both; }
+    .card:hover { box-shadow:0 0 28px rgba(0,102,255,.09); }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .card:nth-child(1){animation-delay:.00s}.card:nth-child(2){animation-delay:.06s}
+    .card:nth-child(3){animation-delay:.12s}.card:nth-child(4){animation-delay:.18s}
+    .card:nth-child(5){animation-delay:.24s}.card:nth-child(6){animation-delay:.30s}
+    .card:nth-child(7){animation-delay:.36s}.card:nth-child(8){animation-delay:.42s}
+
+    .card-accent { height:3px; width:100%; background:var(--dim); transition:background .5s; }
+    .card-body { padding:16px; }
+
+    /* CARD TOP */
+    .card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+    .sym { font-family:var(--display); font-size:1rem; font-weight:700; color:var(--white); letter-spacing:2px; }
+    .sym-label { font-size:.6rem; color:var(--dim); margin-top:3px; font-family:var(--mono); }
+    .price { font-size:1.25rem; font-weight:700; color:var(--white); font-family:var(--mono); text-align:right; }
+    .change { font-size:.7rem; text-align:right; }
+    .up{color:var(--buy)} .down{color:var(--sell)} .neu{color:var(--dim)}
+
+    /* SIGNAL GRAND FORMAT */
+    .signal-block { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; margin-bottom:12px; border:1px solid; transition:all .5s; }
+    .signal-icon { font-size:1.6rem; line-height:1; flex-shrink:0; }
+    .signal-text { font-family:var(--display); font-size:.95rem; font-weight:700; letter-spacing:2px; transition:color .4s; }
+    .signal-sub  { font-size:.62rem; margin-top:3px; opacity:.75; font-family:var(--mono); letter-spacing:1px; }
+
+    .sig-BUY  { background:rgba(0,232,122,.08);  border-color:rgba(0,232,122,.3);  }
+    .sig-SELL { background:rgba(255,51,85,.08);   border-color:rgba(255,51,85,.3);  }
+    .sig-HOLD { background:rgba(255,187,0,.08);   border-color:rgba(255,187,0,.3);  }
+    .sig-WAIT { background:rgba(42,69,112,.1);    border-color:var(--border);       }
+
+    .sig-BUY  .signal-text, .sig-BUY  .signal-sub  { color:var(--buy);  }
+    .sig-SELL .signal-text, .sig-SELL .signal-sub  { color:var(--sell); }
+    .sig-HOLD .signal-text, .sig-HOLD .signal-sub  { color:var(--hold); }
+    .sig-WAIT .signal-text, .sig-WAIT .signal-sub  { color:var(--dim);  }
+
+    /* EXPLICATION HUMAINE */
+    .human-explain { background:rgba(255,255,255,.025); border-radius:8px; padding:10px 13px; margin:0 0 12px; font-size:.79rem; color:#9bbcd8; line-height:1.6; border-left:3px solid var(--dim); transition:border-color .5s; }
+
+    /* MINI CHART */
+    .mini-chart { margin:0 0 12px; }
+    .mini-chart canvas { display:block; width:100%; height:52px; border-radius:6px; }
+    .chart-label { font-size:.55rem; color:var(--dim); font-family:var(--mono); letter-spacing:1px; margin-top:4px; }
+
+    /* JAUGES */
+    .gauge-row { display:flex; justify-content:space-between; font-size:.62rem; color:var(--dim); margin-bottom:5px; font-family:var(--mono); }
+    .gauge-val { color:var(--text); font-weight:600; }
+    .track { height:4px; border-radius:2px; background:rgba(255,255,255,.05); overflow:hidden; margin-bottom:10px; }
+    .fill { height:100%; border-radius:2px; transition:width .5s ease, background .5s; }
+    .f-buy{background:var(--buy)} .f-mid{background:var(--hold)} .f-sell{background:var(--sell)}
+    .split-track { height:4px; border-radius:2px; display:flex; overflow:hidden; margin-bottom:10px; }
+    .s-buy{background:var(--buy);transition:flex .5s} .s-sell{background:var(--sell);transition:flex .5s}
+
+    /* Flash */
+    @keyframes flash { 0%{opacity:1} 40%{opacity:.15} 100%{opacity:1} }
+    .flashing .signal-block { animation:flash .5s ease 2; }
+
+    /* BALEINES */
+    .whale-section { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:44px; }
+    .whale-intro { font-size:.79rem; color:var(--dim); margin-bottom:16px; line-height:1.6; padding:11px 14px; background:rgba(125,211,252,.04); border:1px solid rgba(125,211,252,.1); border-radius:8px; }
+    .whale-list { display:flex; flex-direction:column; gap:8px; }
+    .whale-item { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:9px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05); animation:fadeUp .3s ease both; }
+    .whale-emoji { font-size:1.4rem; flex-shrink:0; }
+    .whale-info { flex:1; min-width:0; }
+    .whale-coin { font-weight:700; color:var(--white); font-family:var(--mono); letter-spacing:1px; font-size:.8rem; }
+    .whale-desc { color:var(--dim); font-size:.71rem; margin-top:3px; line-height:1.45; }
+    .whale-amount { font-family:var(--mono); font-weight:700; font-size:.8rem; padding:5px 11px; border-radius:5px; white-space:nowrap; flex-shrink:0; }
+    .wa-buy  { color:var(--buy);  background:rgba(0,232,122,.1); }
+    .wa-sell { color:var(--sell); background:rgba(255,51,85,.1); }
+    .whale-empty { color:var(--dim); font-size:.75rem; font-family:var(--mono); padding:18px 0; text-align:center; }
+
+    /* HISTORIQUE */
+    .hist-section { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+    .htable { width:100%; border-collapse:collapse; font-size:.72rem; }
+    .htable th { text-align:left; padding:8px 12px; color:var(--dim); border-bottom:1px solid var(--border); font-weight:400; font-size:.6rem; text-transform:uppercase; letter-spacing:1px; font-family:var(--mono); }
+    .htable td { padding:9px 12px; border-bottom:1px solid rgba(20,41,77,.35); }
+    .htable tr:hover td { background:rgba(255,255,255,.015); }
+    .hBUY{color:var(--buy);font-weight:700} .hSELL{color:var(--sell);font-weight:700} .hHOLD{color:var(--hold);font-weight:700}
+
+    footer { margin-top:44px; padding-top:16px; border-top:1px solid var(--border); font-size:.58rem; color:var(--dim); text-align:center; letter-spacing:1.5px; font-family:var(--mono); }
+
+    @media(max-width:520px){
+      h1{font-size:1rem;letter-spacing:2px}
+      .grid{grid-template-columns:1fr}
+      .price{font-size:1rem}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="radar-wrap">
+        <div class="radar-ring"></div>
+        <div class="radar-sweep"></div>
+        <div class="radar-dot"></div>
+      </div>
+      <div>
+        <h1>CRYPTO<span>RADAR</span></h1>
+        <div class="subtitle">SIGNAUX EN TEMPS RÉEL — BINANCE LIVE</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="dot"></div>LIVE</div>
+      <div id="userCount">— en ligne</div>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    ⚠️ <strong>À titre indicatif uniquement.</strong> Ces signaux sont calculés automatiquement à partir des échanges en temps réel.
+    Ils <strong>ne constituent pas un conseil financier</strong>. Les cryptomonnaies sont des actifs très volatils.
+    N'investissez jamais plus que ce que vous pouvez vous permettre de perdre.
+  </div>
+
+  <div class="section-title">📡 Signaux en direct</div>
+  <div class="grid" id="grid"></div>
+
+  <div class="section-title">🐋 Gros investisseurs détectés</div>
+  <div class="whale-section">
+    <div class="whale-intro">
+      Les <strong style="color:#7dd3fc">baleines</strong> sont de très grands investisseurs capables de faire bouger le marché à eux seuls.
+      Quand une baleine achète ou vend massivement, ça peut influencer le prix dans les minutes qui suivent.
+      On surveille ici toutes les transactions supérieures à <strong style="color:#7dd3fc">100 000 $</strong>.
+    </div>
+    <div class="whale-list" id="whaleList">
+      <div class="whale-empty">🔍 En attente de grosses transactions… (dès qu'une baleine bouge, elle apparaît ici)</div>
+    </div>
+  </div>
+
+  <div class="section-title">📋 Historique des signaux</div>
+  <div class="hist-section">
+    <table class="htable">
+      <thead>
+        <tr>
+          <th>Heure</th><th>Crypto</th><th>Signal</th><th>Prix ($)</th><th>Ce que ça veut dire</th>
+        </tr>
+      </thead>
+      <tbody id="hbody">
+        <tr><td colspan="5" style="color:var(--dim);padding:18px 12px">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>CRYPTORADAR • DONNÉES BINANCE API GRATUIT • INDICATIF SEULEMENT — PAS DE CONSEIL FINANCIER</footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — Remplace les 3 valeurs ci-dessous
+   ============================================================ */
+const ABLY_KEY = 'DqYhAQ.hP135A:fKYbsb8iWqXgKC-cAr6eUZ-FmsE8whPegOKnH6EliLw';
+const SB_URL   = 'https://zqylctwdocftsdqznvso.supabase.co';
+const SB_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeWxjdHdkb2NmdHNkcXpudnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTI3MzEsImV4cCI6MjA5MjQ2ODczMX0.H5uGMNXD5BxsnH2GtWiZtDfyOmoCo7Psb-636esKZGU';
+
+/*
+  SQL Supabase (SQL Editor) :
+  ----------------------------
+  create table signal_history (
+    id         uuid default gen_random_uuid() primary key,
+    symbol     text not null,
+    signal     text not null,
+    price      numeric,
+    rsi        numeric,
+    buy_ratio  numeric,
+    created_at timestamptz default now()
+  );
+  alter table signal_history enable row level security;
+  create policy "read"   on signal_history for select using (true);
+  create policy "insert" on signal_history for insert with check (true);
+*/
+
+/* ============================================================
+   CRYPTOS SUIVIES
+   ============================================================ */
+const SYMBOLS = [
+  {id:'BTCUSDT', name:'BTC', label:'Bitcoin'},
+  {id:'ETHUSDT', name:'ETH', label:'Ethereum'},
+  {id:'SOLUSDT', name:'SOL', label:'Solana'},
+  {id:'BNBUSDT', name:'BNB', label:'BNB Chain'},
+  {id:'XRPUSDT', name:'XRP', label:'Ripple'},
+  {id:'ADAUSDT', name:'ADA', label:'Cardano'},
+  {id:'DOGEUSDT',name:'DOGE',label:'Dogecoin'},
+  {id:'AVAXUSDT',name:'AVAX',label:'Avalanche'},
+];
+
+/* ============================================================
+   ÉTAT GLOBAL
+   ============================================================ */
+const S = {};
+SYMBOLS.forEach(s => {
+  S[s.id] = {
+    price:null, openPrice:null,
+    prices:[], chartData:[],
+    buyVol:0, sellVol:0,
+    signal:'WAIT', prevSignal:null,
+    rsi:50, buyRatio:.5,
+    chartCtx:null, _tc:0,
+  };
+});
+
+const WHALES = [];
+const WHALE_MIN = 100000; // 100k$
+
+/* ============================================================
+   SUPABASE
+   ============================================================ */
+const sb = (typeof supabase !== 'undefined' && !SB_URL.includes('YOUR'))
+  ? supabase.createClient(SB_URL, SB_ANON) : null;
+
+async function logSignal(sym, sig, price, rsiVal, buyRatio) {
+  if (!sb) return;
+  try {
+    await sb.from('signal_history').insert({
+      symbol:sym, signal:sig,
+      price:Math.round(price*100)/100,
+      rsi:Math.round(rsiVal*10)/10,
+      buy_ratio:Math.round(buyRatio*1000)/1000,
+    });
+  } catch(e) {}
+}
+
+async function loadHistory() {
+  const tbody = document.getElementById('hbody');
+  if (!sb) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--dim);padding:14px 12px">Configures Supabase pour voir l'historique (SB_URL + SB_ANON).</td></tr>`;
+    return;
+  }
+  try {
+    const {data} = await sb.from('signal_history')
+      .select('*').order('created_at',{ascending:false}).limit(15);
+    if (!data||!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--dim);padding:14px 12px">Aucun signal enregistré pour l'instant.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(r => {
+      const hm = new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const lbl = {BUY:'✅ ACHETER', SELL:'🔴 VENDRE', HOLD:'⏳ ATTENDRE'}[r.signal] || r.signal;
+      const expl= humanReason(r.signal, r.rsi||50, (r.buy_ratio||.5)*100);
+      return `<tr>
+        <td style="color:var(--dim);font-family:var(--mono)">${hm}</td>
+        <td style="color:var(--white);font-weight:700;font-family:var(--mono)">${r.symbol.replace('USDT','')}</td>
+        <td class="h${r.signal}">${lbl}</td>
+        <td style="font-family:var(--mono)">$${Number(r.price).toLocaleString('fr-FR')}</td>
+        <td style="color:#9bbcd8;font-size:.7rem">${expl}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+/* ============================================================
+   ABLY
+   ============================================================ */
+function initAbly() {
+  if (!ABLY_KEY || ABLY_KEY.includes('YOUR')) return;
+  try {
+    const ably = new Ably.Realtime({key:ABLY_KEY});
+    const ch   = ably.channels.get('crypto-radar');
+    const ref  = () => ch.presence.get((err,m) => {
+      if (!err) document.getElementById('userCount').textContent =
+        `${m.length} connecté${m.length>1?'s':''}`;
+    });
+    ch.presence.subscribe(ref);
+    ch.presence.enter();
+    ref();
+  } catch(e) {}
+}
+
+/* ============================================================
+   SIGNAL
+   ============================================================ */
+function calcRSI(prices) {
+  const N=14;
+  if (prices.length < N+1) return 50;
+  const sl = prices.slice(-N-1);
+  let g=0, l=0;
+  for(let i=1;i<sl.length;i++){const d=sl[i]-sl[i-1]; if(d>0)g+=d;else l-=d;}
+  const rs = g/(l||.0001);
+  return Math.round((100-100/(1+rs))*10)/10;
+}
+
+function computeSignal(rsiVal, buyRatio, pChange) {
+  const bp = buyRatio * 100;
+  if (rsiVal < 35 && bp > 55) return 'BUY';
+  if (rsiVal < 42 && bp > 63) return 'BUY';
+  if (bp > 70 && pChange >= 0) return 'BUY';
+  if (rsiVal > 65 && bp < 45) return 'SELL';
+  if (rsiVal > 72) return 'SELL';
+  if (bp < 34 && pChange <= 0) return 'SELL';
+  return 'HOLD';
+}
+
+function humanReason(signal, rsiVal, buyPct) {
+  const sp = 100 - buyPct;
+  if (signal === 'BUY') {
+    if (rsiVal < 35) return 'Le prix a bien chuté ces derniers temps. Pour les analystes, c\'est souvent un bon moment pour regarder à l\'achat.';
+    if (buyPct > 68) return `${buyPct.toFixed(0)}% des échanges sont des achats. Les acheteurs sont très actifs en ce moment.`;
+    return `Les acheteurs dominent nettement (${buyPct.toFixed(0)}% des trades). La tendance penche vers la hausse.`;
+  }
+  if (signal === 'SELL') {
+    if (rsiVal > 70) return 'Le prix a beaucoup monté et semble épuisé. Beaucoup d\'investisseurs commencent à prendre leurs profits.';
+    if (sp > 60) return `${sp.toFixed(0)}% des échanges sont des ventes. Les vendeurs sont aux commandes.`;
+    return 'Trop de vendeurs par rapport aux acheteurs. Le marché pourrait corriger à la baisse.';
+  }
+  if (signal === 'HOLD') return 'Ni trop d\'achats, ni trop de ventes. Le marché est en équilibre — pas de signal clair pour l\'instant. Mieux vaut observer.';
+  return 'Collecte de données en cours…';
+}
+
+/* ============================================================
+   MINI GRAPHIQUE CANVAS
+   ============================================================ */
+function drawChart(sym) {
+  const d = S[sym];
+  const ctx = d.chartCtx;
+  if (!ctx || d.chartData.length < 2) return;
+
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const pts = d.chartData;
+  const mn = Math.min(...pts), mx = Math.max(...pts);
+  const rng = mx - mn || .001;
+
+  ctx.clearRect(0,0,W,H);
+
+  const isUp = pts[pts.length-1] >= pts[0];
+  const col  = isUp ? '#00e87a' : '#ff3355';
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, isUp ? 'rgba(0,232,122,.18)' : 'rgba(255,51,85,.18)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  const xp = i => (i/(pts.length-1))*W;
+  const yp = v => H - ((v-mn)/rng)*(H*.82) - H*.06;
+
+  // Aire remplie
+  ctx.beginPath();
+  ctx.moveTo(xp(0),H);
+  pts.forEach((v,i) => ctx.lineTo(xp(i),yp(v)));
+  ctx.lineTo(W,H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Courbe
+  ctx.beginPath();
+  pts.forEach((v,i) => i===0 ? ctx.moveTo(xp(i),yp(v)) : ctx.lineTo(xp(i),yp(v)));
+  ctx.strokeStyle = col;
+  ctx.lineWidth   = 1.8;
+  ctx.lineJoin    = 'round';
+  ctx.stroke();
+
+  // Point final lumineux
+  const lx = xp(pts.length-1), ly = yp(pts[pts.length-1]);
+  ctx.beginPath();
+  ctx.arc(lx,ly,3.5,0,Math.PI*2);
+  ctx.fillStyle = col;
+  ctx.shadowColor = col;
+  ctx.shadowBlur  = 8;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+/* ============================================================
+   BALEINES
+   ============================================================ */
+let _whaleDirty = false;
+
+function checkWhale(sym, price, qty, isSell) {
+  const usd = price * qty;
+  if (usd < WHALE_MIN) return;
+  const info = SYMBOLS.find(s=>s.id===sym);
+  const now  = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const type = isSell ? 'sell' : 'buy';
+  const coin = info?.name || sym.replace('USDT','');
+  const desc = isSell
+    ? `Un gros investisseur vient de <strong style="color:var(--sell)">vendre massivement</strong> du ${coin}. Ça peut faire baisser le prix.`
+    : `Un gros investisseur vient d'<strong style="color:var(--buy)">acheter massivement</strong> du ${coin}. Signal potentiellement positif.`;
+  WHALES.unshift({coin, usd, type, desc, time:now});
+  if (WHALES.length > 8) WHALES.pop();
+  _whaleDirty = true;
+}
+
+function renderWhales() {
+  const el = document.getElementById('whaleList');
+  if (!WHALES.length) {
+    el.innerHTML = `<div class="whale-empty">🔍 En attente de grosses transactions…</div>`;
+    return;
+  }
+  el.innerHTML = WHALES.map(w => {
+    const fmt = w.usd >= 1e6 ? `$${(w.usd/1e6).toFixed(2)}M` : `$${Math.round(w.usd/1000)}k`;
+    return `<div class="whale-item">
+      <div class="whale-emoji">🐋</div>
+      <div class="whale-info">
+        <div class="whale-coin">${w.coin} <span style="font-size:.6rem;color:var(--dim);font-weight:400">${w.time}</span></div>
+        <div class="whale-desc">${w.desc}</div>
+      </div>
+      <div class="whale-amount ${w.type==='buy'?'wa-buy':'wa-sell'}">${w.type==='buy'?'▲ ACHAT':'▼ VENTE'}<br>${fmt}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+function buildCards() {
+  document.getElementById('grid').innerHTML = SYMBOLS.map(s=>`
+    <div class="card" id="c-${s.id}">
+      <div class="card-accent" id="ca-${s.id}"></div>
+      <div class="card-body">
+
+        <div class="card-top">
+          <div>
+            <div class="sym">${s.name}</div>
+            <div class="sym-label">${s.label}</div>
+          </div>
+          <div>
+            <div class="price" id="p-${s.id}">—</div>
+            <div class="change neu" id="ch-${s.id}">connexion…</div>
+          </div>
+        </div>
+
+        <div class="signal-block sig-WAIT" id="sblk-${s.id}">
+          <div class="signal-icon" id="sico-${s.id}">⌛</div>
+          <div>
+            <div class="signal-text" id="stxt-${s.id}">CHARGEMENT</div>
+            <div class="signal-sub"  id="ssub-${s.id}">Patientez…</div>
+          </div>
+        </div>
+
+        <div class="human-explain" id="he-${s.id}">Collecte de données en cours…</div>
+
+        <div class="mini-chart">
+          <canvas id="cv-${s.id}" height="52"></canvas>
+          <div class="chart-label">Évolution du prix (temps réel)</div>
+        </div>
+
+        <div class="gauge-row">
+          <span>⬆ Acheteurs &nbsp;/&nbsp; ⬇ Vendeurs</span>
+          <span class="gauge-val" id="gv-${s.id}">—</span>
+        </div>
+        <div class="split-track">
+          <div class="s-buy"  id="gb-${s.id}" style="flex:50"></div>
+          <div class="s-sell" id="gs-${s.id}" style="flex:50"></div>
+        </div>
+
+        <div class="gauge-row">
+          <span>🌡 Température du marché</span>
+          <span class="gauge-val" id="gri-${s.id}">—</span>
+        </div>
+        <div class="track">
+          <div class="fill f-mid" id="grb-${s.id}" style="width:50%"></div>
+        </div>
+
+      </div>
+    </div>`).join('');
+
+  // Init canvas
+  SYMBOLS.forEach(s => {
+    const cv = document.getElementById(`cv-${s.id}`);
+    if (!cv) return;
+    cv.width  = cv.offsetWidth || 260;
+    cv.height = 52;
+    S[s.id].chartCtx = cv.getContext('2d');
+  });
+}
+
+function updateCard(sym) {
+  const d = S[sym];
+  if (!d.price) return;
+
+  const pChange = d.openPrice ? d.price - d.openPrice : 0;
+  const signal  = computeSignal(d.rsi, d.buyRatio, pChange);
+  const changed = signal !== d.signal;
+  d.prevSignal  = d.signal;
+  d.signal      = signal;
+
+  // Prix
+  const fmt = d.price >= 1000
+    ? d.price.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})
+    : d.price >= 1 ? d.price.toFixed(4) : d.price.toFixed(6);
+  _q(`p-${sym}`, el => el.textContent = `$${fmt}`);
+
+  // Variation 24h
+  if (d.openPrice) {
+    const pct = pChange/d.openPrice*100;
+    _q(`ch-${sym}`, el => {
+      el.textContent = `${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`;
+      el.className   = `change ${pct>0?'up':pct<0?'down':'neu'}`;
+    });
+  }
+
+  // Signal block
+  const LABELS  = {BUY:'✅ ACHETER', SELL:'🔴 VENDRE', HOLD:'⏳ ATTENDRE', WAIT:'⌛ CHARGEMENT'};
+  const ICONS   = {BUY:'📈', SELL:'📉', HOLD:'🔄', WAIT:'⌛'};
+  const SUBS    = {BUY:'Signal positif détecté', SELL:'Signal négatif détecté', HOLD:'Signal neutre — Observer', WAIT:'Patientez…'};
+  const ACCENTS = {BUY:'var(--buy)', SELL:'var(--sell)', HOLD:'var(--hold)', WAIT:'var(--dim)'};
+
+  _q(`sblk-${sym}`, el => el.className = `signal-block sig-${signal}`);
+  _q(`sico-${sym}`, el => el.textContent = ICONS[signal]);
+  _q(`stxt-${sym}`, el => el.textContent = LABELS[signal]);
+  _q(`ssub-${sym}`, el => el.textContent = SUBS[signal]);
+  _q(`ca-${sym}`,   el => el.style.background = ACCENTS[signal]);
+  _q(`he-${sym}`,   el => {
+    el.textContent = humanReason(signal, d.rsi, d.buyRatio*100);
+    el.style.borderLeftColor = ACCENTS[signal];
+  });
+
+  // Jauges
+  const bp = Math.round(d.buyRatio*100);
+  _q(`gv-${sym}`,  el => el.textContent = `${bp}% / ${100-bp}%`);
+  _q(`gb-${sym}`,  el => el.style.flex = bp);
+  _q(`gs-${sym}`,  el => el.style.flex = 100-bp);
+
+  const rsiLabel = d.rsi < 35 ? 'Froid (survente)' : d.rsi > 65 ? 'Chaud (surachat)' : 'Tiède (normal)';
+  _q(`gri-${sym}`, el => el.textContent = `${d.rsi} — ${rsiLabel}`);
+  _q(`grb-${sym}`, el => {
+    el.style.width = `${d.rsi}%`;
+    el.className   = `fill ${d.rsi<40?'f-buy':d.rsi>60?'f-sell':'f-mid'}`;
+  });
+
+  // Flash + log si signal change
+  if (changed) {
+    const card = document.getElementById(`c-${sym}`);
+    if (card) { card.classList.add('flashing'); setTimeout(()=>card.classList.remove('flashing'),2000); }
+    if (d.prevSignal && d.prevSignal !== 'WAIT') {
+      logSignal(sym, signal, d.price, d.rsi, d.buyRatio);
+      setTimeout(loadHistory, 1500);
+    }
+  }
+
+  drawChart(sym);
+}
+
+function _q(id,fn){ const el=document.getElementById(id); if(el) fn(el); }
+
+/* ============================================================
+   BINANCE WEBSOCKET
+   ============================================================ */
+let _ws, _ping;
+
+function connectBinance() {
+  const streams = SYMBOLS.map(s =>
+    `${s.id.toLowerCase()}@aggTrade/${s.id.toLowerCase()}@miniTicker`
+  ).join('/');
+  _ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+  _ws.onopen = () => {
+    _ping = setInterval(() => {
+      if (_ws.readyState===1) _ws.send(JSON.stringify({method:'LIST_SUBSCRIPTIONS',id:1}));
+    }, 25000);
+  };
+
+  _ws.onmessage = ({data}) => {
+    _lastMsg = Date.now(); // watchdog reset
+    try {
+      const msg = JSON.parse(data);
+      if (!msg.data || !msg.stream) return;
+      const sym = msg.stream.split('@')[0].toUpperCase();
+      const d   = S[sym];
+      if (!d) return;
+
+      if (msg.data.e === 'aggTrade') {
+        const price = parseFloat(msg.data.p);
+        const qty   = parseFloat(msg.data.q);
+        const isMk  = msg.data.m; // true = vendeur maker = pression vente
+
+        d.price = price;
+        if (isMk) d.sellVol += qty; else d.buyVol += qty;
+        const tot = d.buyVol + d.sellVol;
+        if (tot > 800) { d.buyVol*=.92; d.sellVol*=.92; }
+        d.buyRatio = d.buyVol / (tot||1);
+
+        const last = d.prices[d.prices.length-1];
+        if (!last || Math.abs(price-last)/last > .00005) {
+          d.prices.push(price);
+          if (d.prices.length > 60) d.prices.shift();
+        }
+
+        // Chart : 1 point toutes les 8 trades
+        d._tc = (d._tc||0)+1;
+        if (d._tc % 8 === 0) {
+          d.chartData.push(price);
+          if (d.chartData.length > 40) d.chartData.shift();
+        }
+
+        d.rsi = calcRSI(d.prices);
+
+        // Détection baleine (flag seulement, pas de rendu immédiat)
+        checkWhale(sym, price, qty, isMk);
+
+        // PAS de updateCard ici → géré par la boucle de rendu
+      }
+
+      if (msg.data.e === '24hrMiniTicker') {
+        d.openPrice = parseFloat(msg.data.o);
+      }
+    } catch(e) {}
+  };
+
+  _ws.onerror  = () => {};
+  _ws.onclose  = () => { clearInterval(_ping); setTimeout(connectBinance, 4000); };
+}
+
+/* ============================================================
+   BOUCLE DE RENDU — 500ms
+   Données = temps réel | Affichage = limité → pas de freeze
+   ============================================================ */
+let _lastMsg = Date.now();
+
+function renderLoop() {
+  SYMBOLS.forEach(s => updateCard(s.id));
+  if (_whaleDirty) { renderWhales(); _whaleDirty = false; }
+}
+
+/* ============================================================
+   WATCHDOG — reconnexion auto si silence > 30s
+   ============================================================ */
+function startWatchdog() {
+  setInterval(() => {
+    if (Date.now() - _lastMsg > 30000) {
+      if (_ws) { _ws.onclose = null; _ws.close(); }
+      clearInterval(_ping);
+      connectBinance();
+    }
+  }, 15000);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildCards();
+connectBinance();
+initAbly();
+loadHistory();
+setInterval(renderLoop, 500);
+setInterval(loadHistory, 60000);
+startWatchdog();
+
+window.addEventListener('resize', () => {
+  SYMBOLS.forEach(s => {
+    const cv = document.getElementById(`cv-${s.id}`);
+    if (cv) { cv.width = cv.offsetWidth; drawChart(s.id); }
+  });
+});
+</script>
+</body>
+</html>
